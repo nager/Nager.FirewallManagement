@@ -1,63 +1,73 @@
-﻿using System.Linq;
-using System.Reflection;
+﻿using log4net;
+using System;
+using System.Linq;
 using System.Web.Http;
-using System.Web.Http.Description;
 using WindowsFirewallHelper;
 using WindowsFirewallHelper.Addresses;
 
 namespace Nager.FirewallManagement.WebApi
 {
     /// <summary>
-    /// InfoController
+    /// FirewallController
     /// </summary>
     [RoutePrefix("Firewall")]
     public class FirewallController : ApiController
     {
+        private static readonly ILog Log = LogManager.GetLogger(typeof(FirewallController));
+
         /// <summary>
-        /// Get service version
+        /// Add an additional ip address
         /// </summary>
-        [HttpGet]
-        [Route("Version")]
-        [ResponseType(typeof(string))]
-        public IHttpActionResult Version()
+        [HttpPost]
+        [Route("AddAdditionalIpForRdp")]
+        //[ResponseType(typeof(string))]
+        public IHttpActionResult AddAdditionalIpForRdp([FromUri] string ipAddress)
         {
-            var rule = FirewallManager.Instance.Rules.Where(o =>
-                o.Direction == FirewallDirection.Inbound &&
-                o.Name.Equals("Allow Remote Desktop")
-            ).FirstOrDefault();
+            var ruleName = "Allow Remote Desktop";
 
-            if (rule != null)
+            try
             {
-                //Update an existing Rule
-                rule.RemoteAddresses = new IAddress[]
-                {
-                    SingleIP.Parse("192.168.184.1"),
-                    SingleIP.Parse("192.168.184.2")
-                };
+                var rule = FirewallManager.Instance.Rules.Where(o =>
+                    o.Direction == FirewallDirection.Inbound &&
+                    o.Name.Equals(ruleName)
+                ).FirstOrDefault();
 
+                if (rule != null)
+                {
+                    var items = rule.RemoteAddresses.ToList();
+                    items.Add(SingleIP.Parse(ipAddress));
+
+                    //Update an existing Rule
+                    rule.RemoteAddresses = items.ToArray();
+
+                    return Ok();
+                }
+
+                //Create a new rule
+                rule = FirewallManager.Instance.CreateApplicationRule(
+                     FirewallManager.Instance.GetProfile().Type,
+                     ruleName,
+                     FirewallAction.Allow,
+                     null
+                );
+
+                rule.Direction = FirewallDirection.Inbound;
+                rule.LocalPorts = new ushort[] { 3389 };
+                rule.Action = FirewallAction.Allow;
+                rule.Protocol = FirewallProtocol.TCP;
+                rule.Scope = FirewallScope.All;
+                rule.Profiles = FirewallProfiles.Public | FirewallProfiles.Private;
+                rule.RemoteAddresses = new IAddress[] { SingleIP.Parse(ipAddress) };
+
+                FirewallManager.Instance.Rules.Add(rule);
                 return Ok();
             }
+            catch (Exception exception)
+            {
+                Log.Error($"{nameof(AddAdditionalIpForRdp)}", exception);
+            }
 
-            //Create a new rule
-            rule = FirewallManager.Instance.CreateApplicationRule(
-                 FirewallManager.Instance.GetProfile().Type,
-                 @"Allow Remote Desktop",
-                 FirewallAction.Allow,
-                 null
-            );
-
-            rule.Direction = FirewallDirection.Inbound;
-            rule.LocalPorts = new ushort[] { 3389 };
-            rule.Action = FirewallAction.Allow;
-            rule.Protocol = FirewallProtocol.TCP;
-            rule.Scope = FirewallScope.All;
-            rule.Profiles = FirewallProfiles.Public | FirewallProfiles.Private;
-            rule.RemoteAddresses = new IAddress[] { SingleIP.Parse("192.168.184.1") };
-
-            FirewallManager.Instance.Rules.Add(rule);
-
-            var version = Assembly.GetExecutingAssembly().GetName().Version;
-            return Ok($"{version.Major}.{version.Minor}.{version.Build}");
+            return InternalServerError();
         }
     }
 }

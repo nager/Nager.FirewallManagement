@@ -1,12 +1,11 @@
 ﻿using log4net;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.Hosting;
+using Nager.FirewallManagement.WebApi;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using Owin;
-using SimpleInjector;
-using SimpleInjector.Integration.WebApi;
 using Swashbuckle.Application;
 using System;
 using System.Collections.Generic;
@@ -14,7 +13,6 @@ using System.Net.Http.Formatting;
 using System.Threading;
 using System.Web.Http;
 using Topshelf;
-
 
 namespace Nager.FirewallManagement
 {
@@ -25,7 +23,6 @@ namespace Nager.FirewallManagement
         private const string AppGuid = "aaba00d6-cd4a-4f0e-9b2b-68530b0ad7e6";
         private Mutex _mutex;
 
-        private Container _container;
         private IDisposable _webApp;
 
         public bool Start(HostControl hostControl)
@@ -36,9 +33,6 @@ namespace Nager.FirewallManagement
                 Log.Error($"{nameof(Start)} - Cannot start a second instance");
                 return false;
             }
-
-            this._container = new Container();
-            this._container.Verify();
 
             Log.Debug($"{nameof(Start)} - {ServiceName}");
 
@@ -54,7 +48,6 @@ namespace Nager.FirewallManagement
 
             this._webApp?.Dispose();
             this._mutex.Dispose();
-            this._container?.Dispose();
 
             return true;
         }
@@ -70,9 +63,6 @@ namespace Nager.FirewallManagement
             {
                 this._webApp = WebApp.Start(url, (app) =>
                 {
-                    var config = new HttpConfiguration();
-                    config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(this._container);
-
                     //Use JSON friendly default settings
                     var defaultSettings = new JsonSerializerSettings
                     {
@@ -84,6 +74,9 @@ namespace Nager.FirewallManagement
 
                     //Access-Control-Allow-Origin
                     app.UseCors(CorsOptions.AllowAll);
+
+                    var config = new HttpConfiguration();
+                    config.Filters.Add(new ApiKeyAuthorizationFilter());
 
                     //Specify JSON as the default media type
                     config.Formatters.Clear();
@@ -98,7 +91,11 @@ namespace Nager.FirewallManagement
                     config.EnableSwagger(c =>
                     {
                         c.SingleApiVersion("1.0", ServiceName);
-                    }).EnableSwaggerUi();
+                        c.ApiKey("apiKey").Description("API Key Authentication").Name("Api-Key").In("header");
+                    }).EnableSwaggerUi(c =>
+                    {
+                        c.EnableApiKeySupport("Api-Key", "header");
+                    });
 
                     app.UseWebApi(config);
                 });
