@@ -1,38 +1,50 @@
-﻿using log4net;
-using log4net.Config;
-using System;
-using System.IO;
-using System.Reflection;
-using Topshelf;
+using Microsoft.OpenApi.Models;
+using Nager.FirewallManagement.Middlewares;
 
-namespace Nager.FirewallManagement
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseWindowsService();
+
+// Add services to the container.
+
+builder.Services.AddControllers();
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(configuration =>
 {
-    class Program
+    configuration.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
     {
-        static int Main(string[] args)
+        Type = SecuritySchemeType.ApiKey,
+        In = ParameterLocation.Header,
+        Name = "X-Api-Key",
+        Description = "Set the Api Key"
+    });
+
+    configuration.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
         {
-            Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
-
-            var log4netConfig = new FileInfo("log4net.config");
-            if (!log4netConfig.Exists)
+            new OpenApiSecurityScheme
             {
-                Console.WriteLine("[Warning] Cannot found a log4net.config");
-            }
-
-            var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
-            XmlConfigurator.ConfigureAndWatch(logRepository, log4netConfig);
-
-            var exitCode = HostFactory.Run(x =>
-            {
-                x.Service<Controller>();
-                x.RunAsLocalSystem();
-                x.SetDescription("Nager FirewallManagement");
-                x.SetDisplayName("Nager.FirewallManagement");
-                x.SetServiceName("Nager.FirewallManagement");
-            });
-
-            return (int)exitCode;
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "ApiKey"
+                }
+            },
+            Array.Empty<string>()
         }
+    });
+});
 
-    }
-}
+var app = builder.Build();
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
+app.UseAuthorization();
+
+app.UseMiddleware<ApiKeyMiddleware>();
+
+app.MapControllers();
+
+app.Run();
