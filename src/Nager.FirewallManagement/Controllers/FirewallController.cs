@@ -22,6 +22,7 @@ namespace Nager.FirewallManagement.Controllers
         /// </summary>
         [HttpPost]
         [Route("AddAdditionalIpForRdp")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public ActionResult AddAdditionalIpForRdp([FromQuery] string ipAddress)
         {
             var ruleName = "Allow Remote Desktop";
@@ -46,7 +47,7 @@ namespace Nager.FirewallManagement.Controllers
                     //Update an existing Rule
                     rule.RemoteAddresses = items.ToArray();
 
-                    return Ok();
+                    return StatusCode(StatusCodes.Status204NoContent);
                 }
 
                 //Create a new rule
@@ -64,7 +65,7 @@ namespace Nager.FirewallManagement.Controllers
                 rule.RemoteAddresses = new IAddress[] { singleIpAddress };
 
                 FirewallManager.Instance.Rules.Add(rule);
-                return StatusCode(StatusCodes.Status200OK);
+                return StatusCode(StatusCodes.Status204NoContent);
             }
             catch (Exception exception)
             {

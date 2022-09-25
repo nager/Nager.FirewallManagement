@@ -1,11 +1,20 @@
+using Microsoft.Extensions.Hosting.WindowsServices;
 using Microsoft.OpenApi.Models;
 using Nager.FirewallManagement.Middlewares;
 
-var builder = WebApplication.CreateBuilder(args);
 
-builder.Host.UseWindowsService();
+var options = new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = WindowsServiceHelpers.IsWindowsService() ? AppContext.BaseDirectory : default
+};
 
-// Add services to the container.
+var builder = WebApplication.CreateBuilder(options);
+
+builder.Host.UseWindowsService(configuration =>
+{
+    configuration.ServiceName = "Nager.FirewallManagement";
+});
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
