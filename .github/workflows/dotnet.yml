@@ -35,3 +35,10 @@ jobs:
       with:
         files: ./publish/temp
         dest: ./publish/Nager.FirewallManagement.zip
+    - name: Upload binaries to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_name: Nager/FirewallManagement
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: ./publish/Nager.FirewallManagement.zip
+        overwrite: true
