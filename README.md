@@ -16,6 +16,12 @@ sc.exe create "Nager.FirewallManagement" start=auto binPath="C:\Tools\Nager.Fire
 
 ## Uninstallation
 
+With the following command you can unregister the windows service
+
 ```
 sc.exe delete "Nager.FirewallManagement"
 ```
+
+## How to use the WebApi
+
+After the installation and start of the Windows service you can reach the WebApi under the following Url `http://localhost:5000/swagger`
