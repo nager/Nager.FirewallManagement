@@ -28,3 +28,10 @@ jobs:
     - name: Build
       working-directory: ./src
       run: dotnet build --configuration Release --no-restore
+    - name: Build project
+      run: |
+        dotnet publish ./src/Nager.FirewallManagement/Nager.FirewallManagement.csproj --configuration Release --self-contained false --runtime win-x64 -p:PublishReadyToRun=true -p:PublishSingleFile=true --output ./publish/temp
+    - uses: vimtor/action-zip@v1
+      with:
+        files: ./publish/temp
+        dest: ./publish/Nager.FirewallManagement.zip
