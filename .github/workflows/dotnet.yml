@@ -35,15 +35,11 @@ jobs:
       with:
         files: ./publish/temp
         dest: ./publish/Nager.FirewallManagement.zip
-    - name: Get the version
-      id: get_version
-      run: echo ::set-output name=tag::${GITHUB_REF/refs\/tags\//}
-      shell: bash
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
       with:
         repo_name: Nager/Nager.FirewallManagement
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: ./publish/Nager.FirewallManagement.zip
-        tag: ${{ steps.get_version.outputs.tag }}
+        tag: $GITHUB_SHA
         overwrite: true
