@@ -35,11 +35,13 @@ jobs:
       with:
         files: ./publish/temp
         dest: ./publish/Nager.FirewallManagement.zip
+    - uses: benjlevesque/short-sha@v1.2
+        id: short-sha
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
       with:
         repo_name: Nager/Nager.FirewallManagement
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: ./publish/Nager.FirewallManagement.zip
-        tag: ${{ github.sha }}
+        tag: ${{ steps.short-sha.outputs.sha }}
         overwrite: true
