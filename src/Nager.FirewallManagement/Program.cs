@@ -16,8 +16,11 @@ builder.Host.UseWindowsService(configuration =>
     configuration.ServiceName = "Nager.FirewallManagement";
 });
 
+
+
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddMemoryCache();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(configuration =>
 {
