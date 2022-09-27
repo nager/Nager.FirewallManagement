@@ -41,5 +41,5 @@ jobs:
         repo_name: Nager/Nager.FirewallManagement
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: ./publish/Nager.FirewallManagement.zip
-        tag: $GITHUB_SHA
+        tag: ${{ $GITHUB_SHA }}
         overwrite: true
