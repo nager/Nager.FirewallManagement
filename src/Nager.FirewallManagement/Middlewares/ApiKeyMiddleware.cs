@@ -33,16 +33,16 @@ namespace Nager.FirewallManagement.Middlewares
                 return;
             }
 
-            if (!context.Request.Headers.TryGetValue(ApiKeyHeaderName, out var potentialApiKey))
+            if (!context.Request.Headers.TryGetValue(ApiKeyHeaderName, out var receivedApiKey))
             {
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 return;
             }
 
             var configuration = context.RequestServices.GetRequiredService<IConfiguration>();
-            var apiKey = configuration.GetValue<string>("ApiKey");
+            var expectedApiKey = configuration.GetValue<string>("ApiKey");
 
-            if (!apiKey.Equals(potentialApiKey))
+            if (!expectedApiKey.Equals(receivedApiKey))
             {
                 var remoteIpAddress = context.Connection.RemoteIpAddress;
                 if (remoteIpAddress != null)
