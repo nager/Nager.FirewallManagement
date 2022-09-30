@@ -3,6 +3,9 @@
 With this small application you can manage your Windows Firewall via a WebApi, the WebApi is protected by an ApiKey (Header `X-Api-Key`).
 In the current implementation a remote desktop connection can be allowed for a specific Ip address. Currently we have the logic for RDP and MSSQL available. If you need more you can send a pull request.
 
+## Download
+- You can download the binaries [here](https://github.com/Nager/Nager.FirewallManagement/releases/latest/download/Nager.FirewallManagement.zip)
+
 ## Configuration
 The `ApiKey` can set in the `appsettings.json`,  the default `ApiKey` is `changeme`.
 
