@@ -8,25 +8,24 @@ namespace Nager.FirewallManagement.Controllers
     [ApiController]
     [ApiKey]
     [Route("[controller]")]
-    public class FirewallController : ControllerBase
+    public class MssqlController : ControllerBase
     {
-        private readonly ILogger<FirewallController> _logger;
+        private readonly ILogger<RemoteDesktopController> _logger;
+        private readonly string _ruleName = "Nager.FirewallManagement.Mssql";
 
-        public FirewallController(ILogger<FirewallController> logger)
+        public MssqlController(ILogger<RemoteDesktopController> logger)
         {
             this._logger = logger;
         }
 
         /// <summary>
-        /// Add an additional ip address
+        /// Create a firewall rule for Microsoft SQL Server on port 1433
         /// </summary>
         [HttpPost]
-        [Route("AddAdditionalIpForRdp")]
+        [Route("AllowAccess")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public ActionResult AddAdditionalIpForRdp([FromQuery] string ipAddress)
+        public ActionResult AllowAccess([FromQuery] string ipAddress)
         {
-            var ruleName = "Allow Remote Desktop";
-
             if (!SingleIP.TryParse(ipAddress, out SingleIP singleIpAddress))
             {
                 return StatusCode(StatusCodes.Status500InternalServerError);
@@ -36,7 +35,7 @@ namespace Nager.FirewallManagement.Controllers
             {
                 var rule = FirewallManager.Instance.Rules.Where(o =>
                     o.Direction == FirewallDirection.Inbound &&
-                    o.Name.Equals(ruleName)
+                    o.Name.Equals(this._ruleName)
                 ).FirstOrDefault();
 
                 if (rule != null)
@@ -52,10 +51,10 @@ namespace Nager.FirewallManagement.Controllers
 
                 //Create a new rule
                 rule = FirewallManager.Instance.CreatePortRule(
-                    FirewallProfiles.Public,
-                    ruleName,
+                    FirewallProfiles.Public | FirewallProfiles.Private | FirewallProfiles.Domain,
+                    this._ruleName,
                     FirewallAction.Allow,
-                    3389,
+                    1433,
                     FirewallProtocol.TCP
                 );
 
@@ -69,7 +68,40 @@ namespace Nager.FirewallManagement.Controllers
             }
             catch (Exception exception)
             {
-                this._logger.LogError(exception, $"{nameof(AddAdditionalIpForRdp)}");
+                this._logger.LogError(exception, $"{nameof(AllowAccess)}");
+            }
+
+            return StatusCode(StatusCodes.Status500InternalServerError);
+        }
+
+        /// <summary>
+        /// Remove firewall rule for Microsoft SQL Server
+        /// </summary>
+        [HttpDelete]
+        [Route("RemoveAccess")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public ActionResult RemoveAccess()
+        {
+
+            try
+            {
+                var rule = FirewallManager.Instance.Rules.Where(o =>
+                    o.Direction == FirewallDirection.Inbound &&
+                    o.Name.Equals(this._ruleName)
+                ).FirstOrDefault();
+
+                if (rule == null)
+                {
+                    return StatusCode(StatusCodes.Status404NotFound);
+                }
+
+                FirewallManager.Instance.Rules.Remove(rule);
+
+                return StatusCode(StatusCodes.Status204NoContent);
+            }
+            catch (Exception exception)
+            {
+                this._logger.LogError(exception, $"{nameof(RemoveAccess)}");
             }
 
             return StatusCode(StatusCodes.Status500InternalServerError);
